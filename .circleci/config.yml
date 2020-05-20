@@ -1,0 +1,40 @@
+version: 2
+jobs:
+  build:
+    working_directory: /go/src/github.com/utilitywarehouse/cbc-paymentology-notifications
+      - image: circleci/golang:1
+    steps:
+      - checkout
+      - run: git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+      - run: make lint test
+
+  deploy:
+    working_directory: /go/src/github.com/utilitywarehouse/cbc-paymentology-notifications
+    docker:
+      - image: circleci/golang:1
+    steps:
+      - checkout
+      - run: git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+      - run: make lint test
+      - setup_remote_docker:
+          version: 18.05.0-ce
+      - run: make ci-docker-build
+      - run: make ci-kubernetes-push
+
+workflows:
+  version: 2
+  development:
+    jobs:
+      - build:
+          context: cbc-dev
+          filters:
+            branches:
+              ignore: master
+              
+  deployment:
+    jobs:
+      - deploy:
+          context: cbc-dev
+          filters:
+            branches:
+              only: master
